@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "787899334683",
+    "project_id": "repartidor-movil",
+    "storage_bucket": "repartidor-movil.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:787899334683:android:d1c562a9322a1ebd1438be",
+        "android_client_info": {
+          "package_name": "com.example.movil_alquiladora_romero_repartidor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiXL6tv_H5hBRMt_L96lTV3Zgfej6LgCo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
