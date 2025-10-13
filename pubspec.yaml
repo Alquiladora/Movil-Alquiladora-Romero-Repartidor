@@ -21,6 +21,8 @@ version: 1.0.0+1
 environment:
   sdk: ^3.9.2
 
+ 
+
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,
@@ -30,10 +32,34 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+<<<<<<< Updated upstream
+=======
+     
+  fl_chart: ^0.68.0 
+  
+  flutter_secure_storage: ^9.0.0
+
+
+  http: ^1.2.2
+  shared_preferences: ^2.2.3
+
+  # Paquetes para la gestión de estado con el patrón BLoC.
+  flutter_bloc: ^8.1.5
+  equatable: ^2.0.5
+
+  ##Paquete para RecapCgat
+  firebase_core: ^3.2.0
+  firebase_app_check: ^0.3.0
+
+
+ 
+  device_info_plus: ^10.1.0
+>>>>>>> Stashed changes
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
