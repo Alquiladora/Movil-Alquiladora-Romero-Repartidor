@@ -1,5 +1,5 @@
-name: movil_alquiladora_romero_repartidor
-description: "A new Flutter project."
+name: RentFast
+description: "Aplicación móvil para repartidores de Alquiladora Romero."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -19,7 +19,9 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.9.2
+  sdk: '>=3.4.3 <4.0.0'
+
+ 
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -30,10 +32,30 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  flutter_secure_storage: ^9.0.0
+
+
+  http: ^1.2.2
+  shared_preferences: ^2.2.3
+
+  # Paquetes para la gestión de estado con el patrón BLoC.
+  flutter_bloc: ^8.1.5
+  equatable: ^2.0.5
+
+  ##Paquete para RecapCgat
+  firebase_core: ^3.2.0
+  firebase_app_check: ^0.3.0
+
+
+ 
+  device_info_plus: ^10.1.0
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -51,16 +73,16 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
+  # La siguiente línea activa el uso de Material Design.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  # Para añadir assets, se usa esta sección.
+  # 'assets:' debe estar alineado con 'uses-material-design:'.
+  assets:
+    # La línea del guion debe tener dos espacios más que 'assets:'.
+    - assets/images/
+    
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
