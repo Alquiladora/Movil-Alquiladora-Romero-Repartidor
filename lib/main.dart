@@ -13,8 +13,11 @@ import 'features/layaout/event_layaut.dart';
 import 'features/dashboard/presentation/home_bloc/home_bloc.dart';
 import 'features/dashboard/presentation/home_bloc/home_event.dart';
 import 'core/services/ape_service_home.dart';
+import 'core/services/api_service_pedidos.dart';
+import 'features/pedidos/pedidos_bloc/pedidos_bloc.dart';
 
 void main() {
+  final apiServicePedidos = ApiServicePedidos();
   runApp(const MyApp());
 }
 
@@ -34,6 +37,8 @@ class MyApp extends StatelessWidget {
           create: (context) => LayaoutService(),
         ),
         RepositoryProvider<HomeService>(create: (_) => HomeService()),
+        
+        RepositoryProvider<ApiServicePedidos>(create: (_) => ApiServicePedidos()), // Añadir el servicio de pedidos
       ],
       child: MaterialApp(
         title: 'Alquiladora Romero Repartidor',
@@ -60,6 +65,13 @@ class MyApp extends StatelessWidget {
         homeservice: context.read<HomeService>(),
       )..add(const LoadHomeData()),
     ),
+    BlocProvider<AssignedOrdersBloc>(
+                create: (context) => AssignedOrdersBloc(
+                  context.read<ApiServicePedidos>(),
+                ),
+              ),
+
+
   ],
   child: const MainLayout(),
 ),
