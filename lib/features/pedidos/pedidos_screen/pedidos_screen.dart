@@ -8,6 +8,7 @@ import '../../../core/models/model_pedidos.dart';
 import 'dart:developer';
 import './payment_screen.dart';
 import './detalles_screen.dart';
+import './incidenteModla.dart';
 
 class PedidoScreen extends StatefulWidget {
   const PedidoScreen({super.key});
@@ -150,6 +151,18 @@ class _PedidosViewState extends State<PedidosView>
   bool _isDataFetched = false;
 
   late String _newState;
+  String _selectedOrderStatus = 'Todos';
+  String _selectedMunicipio = 'Todos';
+  final List<String> _orderStatusOptions = [
+    'Todos',
+    'Urgentes',
+    'Enviando',
+    'Recogiendo'
+  ];
+  final Set<String> _allowedProvinces = {'hidalgo', 'veracruz', 'tamaulipas'};
+
+  List<Pedido> _allOrders = []; // Lista completa de pedidos
+  List<String> _municipiosOptions = ['Todos']; 
 
   @override
   bool get wantKeepAlive => true;
@@ -167,6 +180,7 @@ class _PedidosViewState extends State<PedidosView>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -357,6 +371,7 @@ class DynamicOrderCard extends StatefulWidget {
 class _DynamicOrderCardState extends State<DynamicOrderCard> {
   late String _newState;
   bool _isCancelling = false;
+  bool _isUpdating = false;
 
   final List<String> incidentStates = ['Incompleto', 'Incidente'];
 
@@ -366,14 +381,46 @@ class _DynamicOrderCardState extends State<DynamicOrderCard> {
     _newState = widget.pedido.estadoPedido;
   }
 
-  @override
-  void didUpdateWidget(covariant DynamicOrderCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.pedido.estadoPedido != widget.pedido.estadoPedido) {
-      _newState = widget.pedido.estadoPedido;
-    }
+@override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  
+    context.watch<AssignedOrdersBloc>().stream.listen((state) {
+      
+      if (_isUpdating && (state is AssignedOrdersActionSuccess || state is AssignedOrdersActionFailure)) {
+         if (mounted) {
+           setState(() {
+             _isUpdating = false;
+           });
+         }
+      }
+      
+      if (_isCancelling && state is AssignedOrdersActionFailure && state.message.contains('Error al cancelar')) {
+         if (mounted) {
+            setState(() {
+              _isCancelling = false;
+            });
+         }
+      }
+    });
   }
 
+
+
+  @override
+ void didUpdateWidget(covariant DynamicOrderCard oldWidget) {
+     super.didUpdateWidget(oldWidget);
+     if (oldWidget.pedido.estadoPedido != widget.pedido.estadoPedido) {
+       _newState = widget.pedido.estadoPedido;
+       _isUpdating = false; 
+       _isCancelling = false; 
+     } else if (oldWidget.pedido.id != widget.pedido.id) {
+       _newState = widget.pedido.estadoPedido;
+       _isUpdating = false;
+       _isCancelling = false;
+     }
+  }
+  
  void _showDetailsModal(BuildContext context, Pedido order) {
   showDialog(
     context: context,
@@ -526,7 +573,9 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
             child: const Text('Sí, Cancelar', style: TextStyle(color: Colors.white)),
             onPressed: () {
               Navigator.of(dialogContext).pop(); 
-              setState(() => _isCancelling = true);
+              if (mounted) { 
+                    setState(() => _isCancelling = true); 
+                 }
              
               bloc.add(CancelOrder(pedido.id)); 
             },
@@ -535,6 +584,47 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
       );
     },
   );
+}
+
+//Modal reportar incidencias
+void _showIncidentModal(BuildContext context, Pedido pedido, String nuevoEstadoIncidente ){
+ print("DEBUG: Intentando abrir _showIncidentModal para pedido ${pedido.id} con estado $nuevoEstadoIncidente con pedido ${pedido}");
+ final bloc= context.read<AssignedOrdersBloc>();
+  bool seEnvioReporte = false;
+
+showDialog(
+      context: context,
+    builder: (BuildContext dialogContext) {
+   
+      return IncidentModal(
+        order: pedido,
+        incidentStatus: nuevoEstadoIncidente,
+        onSubmit: (IncidentData data) {
+         
+           if (mounted) {
+             setState(() => _isUpdating = true);
+           }
+          
+           seEnvioReporte = true; 
+
+         
+           bloc.add(SubmitOrderIncident(
+             orderId: pedido.id,
+             incidentData: data,
+           ));
+
+           Navigator.of(dialogContext).pop(); 
+        },
+      );
+    
+    },
+  ).then((_) {
+    
+    if (mounted && _isUpdating && !seEnvioReporte) {
+      setState(() => _isUpdating = false);
+    }
+   
+  });
 }
 
 
@@ -548,10 +638,10 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
     final DateFormat formatter = DateFormat('dd MMM yyyy');
     final String fechaFormateada = formatter.format(pedido.fechaEntrega);
 
-    final bool isIncidentState =
-        _newState == 'Incompleto' || _newState == 'Incidente';
+    final bool isIncidentStateSelected = 
+        incidentStates.contains(_newState);
     final bool isUpdatePending = _newState != pedido.estadoPedido;
-    final bool isButtonEnabled = isIncidentState || isUpdatePending;
+    final bool isButtonEnabled = isIncidentStateSelected || isUpdatePending;
 
     return Card(
       elevation: 4,
@@ -607,7 +697,7 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
               ],
             ),
             Text('#${pedido.id}',
-                style: const TextStyle(color: Colors.grey)), // DATO DINÁMICO
+                style: const TextStyle(color: Colors.grey)), 
             const SizedBox(height: 12),
 
             // --- Información de Contacto y Dirección ---
@@ -615,13 +705,13 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
               Icons.location_on_outlined,
               '${pedido.localidad} ${pedido.municipio} ${pedido.estado}',
             ),
-// DATO DINÁMICO
+
             const SizedBox(height: 8),
             _buildInfoRow(Icons.calendar_today_outlined,
-                fechaFormateada), // DATO DINÁMICO
+                fechaFormateada), 
             const SizedBox(height: 8),
             _buildInfoRow(
-                Icons.phone_outlined, pedido.telefonoCliente), // DATO DINÁMICO
+                Icons.phone_outlined, pedido.telefonoCliente), 
             const Divider(height: 24, thickness: 1, color: Colors.grey),
 
             _buildPaymentStatus(
@@ -690,9 +780,26 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
             
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: isButtonEnabled ? () {/* ... */} : null,
+                    onPressed: (isButtonEnabled && !_isUpdating)
+                    ? () {
+                      if (mounted) {
+                               setState(() => _isUpdating = true);
+                            }
+
+                      if (incidentStates.contains(_newState)) {
+                             
+                              _showIncidentModal(context, pedido, _newState);
+                            } else {
+                             
+                              bloc.add(UpdateOrderStatus(
+                                orderId: pedido.id,
+                                newStatus: _newState, 
+                              ));
+                            }
+
+                    } : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isIncidentState
+                      backgroundColor: isIncidentStateSelected
                           ? Colors.purple
                           : isUpdatePending
                               ? Colors.blue
@@ -702,10 +809,16 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4, vertical: 8), 
                     ),
-                    child: Text(isIncidentState ? 'Reportar' : 'Actualizar',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12)),
+                    child: _isUpdating
+                        ? const SizedBox(
+                            height: 14,
+                            width: 14,
+                            child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                        : Text(
+                            isIncidentStateSelected ? 'Reportar' : 'Actualizar',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12)),
                   ),
                 ),
 
@@ -713,9 +826,9 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
 
               
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                    _confirmCancellation(context, pedido);
+                 child: ElevatedButton(
+                    onPressed: _isCancelling ? null : () { 
+                      _confirmCancellation(context, pedido);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -724,10 +837,9 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4, vertical: 8), 
                     ),
-                    child: const Text('Cancelar',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12)), 
+                    child: _isCancelling
+                           ? const SizedBox(height: 14, width: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                           : const Text('Cancelar', style: TextStyle(color: Colors.white, fontSize: 12)),
                   ),
                 ),
               ],

@@ -8,15 +8,13 @@ abstract class AssignedOrdersEvent extends Equatable {
   List<Object> get props => [];
 }
 
-/// Disparado al iniciar la pantalla o para recargar la lista.
 class FetchAssignedOrders extends AssignedOrdersEvent {}
 
-/// Disparado para actualizar estados como 'En alquiler' o 'Devuelto'.
 class UpdateOrderStatus extends AssignedOrdersEvent {
   final int orderId;
   final String newStatus;
 
-  const UpdateOrderStatus(this.orderId, this.newStatus);
+  const UpdateOrderStatus({required this.orderId, required this.newStatus});
 
   @override
   List<Object> get props => [orderId, newStatus];
@@ -44,3 +42,36 @@ class RegisterPayment extends AssignedOrdersEvent {
 }
 
 class PaymentRegistered extends AssignedOrdersEvent {}
+
+class IncidentData extends Equatable {
+  final String estadoPedido; 
+  final bool entireOrderIssue;
+  final String orderObservations;
+
+  final List<Map<String, dynamic>> productIssues;
+
+  const IncidentData({
+    required this.estadoPedido,
+    required this.entireOrderIssue,
+    required this.orderObservations,
+    required this.productIssues,
+  });
+
+  @override
+  List<Object> get props => [
+        estadoPedido,
+        entireOrderIssue,
+        orderObservations,
+        productIssues
+      ];
+}
+
+class SubmitOrderIncident extends AssignedOrdersEvent {
+  final int orderId;
+  final IncidentData incidentData;
+
+  const SubmitOrderIncident({required this.orderId, required this.incidentData});
+
+  @override
+  List<Object> get props => [orderId, incidentData];
+}

@@ -76,11 +76,9 @@ Future<void> registrarPago(int pedidoId, Map<String, dynamic> paymentData) async
     }
   }
 
-
-
-
   
   Future<void> actualizarEstadoEspecial(int pedidoId, String nuevoEstado) async {
+    print("Datos recbidos de actualizar especial estado $pedidoId $nuevoEstado");
     try {
       final token = await _tokenService.getToken();
       if (token == null) throw Exception('Usuario no autenticado.');
@@ -88,7 +86,7 @@ Future<void> registrarPago(int pedidoId, Map<String, dynamic> paymentData) async
       final normalizedStatus = nuevoEstado.toLowerCase().replaceAll(' ', '-');
       
       final response = await _dio.put(
-        '/repartidor/pedidos/$pedidoId/status/$normalizedStatus',
+        '/repartidor/pedidos/$pedidoId/status-movil/$normalizedStatus',
         options: Options(headers: {
           'Authorization': 'Bearer $token',
         }),
@@ -102,6 +100,56 @@ Future<void> registrarPago(int pedidoId, Map<String, dynamic> paymentData) async
       throw Exception('Error de red al actualizar estado.');
     }
   }
+
+
+Future<void> actualizarEstadoGeneral(int pedidoId, String nuevoEstado) async {
+  try{
+    final token = await _tokenService.getToken();
+    if (token == null) throw Exception('Usuario no autenticado.');
+   final response = await _dio.put(
+        '/repartidor/pedidos/$pedidoId/status-movil',
+        data: {'estado_pedido': nuevoEstado}, 
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Error al actualizar el estado (general).');
+      }
+    } on DioException catch (e) {
+      final serverMessage =
+          e.response?.data?['message'] ?? e.message ?? 'Error de red.';
+      log('Error en actualizarEstadoGeneral: $serverMessage');
+      throw Exception(serverMessage);
+    }
+  }
+
+Future<void> reportarIncidente(int pedidoId, Map<String, dynamic> payload) async{
+ try {
+      final token = await _tokenService.getToken();
+      if (token == null) throw Exception('Usuario no autenticado.');
+      final response = await _dio.post(
+        '/repartidor/pedidos/$pedidoId/incidente-movil',
+        data: payload,
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Error al reportar incidente.');
+      }
+    } on DioException catch (e) {
+      final serverMessage =
+          e.response?.data?['message'] ?? e.message ?? 'Error de red.';
+      log('Error en reportarIncidente: $serverMessage');
+      throw Exception(serverMessage);
+    }
+  }
+
 
   Future<void> cancelarPedido(int pedidoId) async {
     try {

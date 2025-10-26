@@ -38,10 +38,17 @@ class AssignedOrdersError extends AssignedOrdersState {
 
 class AssignedOrdersActionSuccess extends AssignedOrdersState {
   final String message;
-  final List<Pedido> updatedOrders;
-
-  const AssignedOrdersActionSuccess(this.message, this.updatedOrders);
+  const AssignedOrdersActionSuccess(this.message);
 
   @override
-  List<Object> get props => [message, updatedOrders];
+  List<Object> get props => [message];
+}
+
+class AssignedOrdersActionFailure extends AssignedOrdersState {
+  final String message;
+
+  const AssignedOrdersActionFailure(this.message);
+
+  @override
+  List<Object> get props => [message];
 }

@@ -261,10 +261,7 @@ class _PaymentModalState extends State<PaymentModal> {
     );
   }
 
-  // =========================================================================
-  // 2. COMPONENTES DEL FORMULARIO
-  // =========================================================================
-
+  
   Widget _buildAmountSummary() {
     return Container(
       width: double.infinity,
@@ -617,9 +614,6 @@ class _PaymentModalState extends State<PaymentModal> {
     }
   }
 
-  // =========================================================================
-  // 3. WIDGETS AUXILIARES
-  // =========================================================================
 
   Widget _buildMessageBadge(IconData icon, String message, Color color) {
     return Container(
