@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/dashboard/presentation/home_screen/home_screen.dart';
 import '../../features/layaout/layaout_bloc.dart';
 import '../../features/layaout/stats_layaout.dart';
+import '../../features/pedidos/pedidos_screen/pedidos_screen.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -53,7 +54,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     final List<Widget> widgetOptions = <Widget>[
       const HomeScreen(), // Ahora se crea en el contexto correcto
-      const Center(child: Text('Pantalla de Pedidos')),
+      const PedidoScreen(),
       const Center(child: Text('Pantalla de Perfil')),
       const Center(child: Text('Pantalla de Historial')),
       const Center(child: Text('Pantalla de Notificaciones')),
