@@ -1,43 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/models/model_pedidos.dart'; 
+import '../../../core/models/model_pedidos.dart';
 
 Map<String, dynamic> _getProductStatusStyle(String status) {
   final normalizedStatus = status.toLowerCase();
 
   if (normalizedStatus.contains('disponible')) {
     return {
-      'color': Colors.green.shade700, 
-      'bgColor': Colors.green.shade50, 
-      'borderColor': Colors.green.shade200,
-      'icon': Icons.check_circle_outlined
+      'color': Colors.green.shade600,
+      'bgColor': Colors.green.shade50,
+      'borderColor': Colors.green.shade100,
+      'icon': Icons.check_circle_outline
     };
   } else if (normalizedStatus.contains('incompleto')) {
     return {
-      'color': Colors.orange.shade700, 
-      'bgColor': Colors.orange.shade50, 
-      'borderColor': Colors.orange.shade200,
+      'color': Colors.orange.shade600,
+      'bgColor': Colors.orange.shade50,
+      'borderColor': Colors.orange.shade100,
       'icon': Icons.error_outline
     };
   } else if (normalizedStatus.contains('incidente')) {
     return {
-      'color': Colors.red.shade700, 
-      'bgColor': Colors.red.shade50, 
-      'borderColor': Colors.red.shade200,
+      'color': Colors.red.shade600,
+      'bgColor': Colors.red.shade50,
+      'borderColor': Colors.red.shade100,
       'icon': Icons.warning_amber_outlined
     };
   } else if (normalizedStatus.contains('faltante')) {
     return {
-      'color': Colors.deepOrange.shade700, 
-      'bgColor': Colors.deepOrange.shade50, 
-      'borderColor': Colors.deepOrange.shade200,
+      'color': Colors.deepOrange.shade600,
+      'bgColor': Colors.deepOrange.shade50,
+      'borderColor': Colors.deepOrange.shade100,
       'icon': Icons.inventory_2_outlined
     };
   }
   return {
-    'color': Colors.grey.shade700, 
-    'bgColor': Colors.grey.shade50, 
-    'borderColor': Colors.grey.shade200,
+    'color': Colors.grey.shade600,
+    'bgColor': Colors.grey.shade50,
+    'borderColor': Colors.grey.shade100,
     'icon': Icons.help_outline
   };
 }
@@ -56,52 +56,51 @@ class OrderDetailsModal extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade100,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 16, color: Colors.grey.shade600),
+                Icon(icon, size: 18, color: Colors.grey.shade700),
                 const SizedBox(width: 8),
               ],
               Expanded(
                 child: Text(
                   label.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+                    fontSize: 12,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
                   ),
-                  maxLines: 1, // Aseguramos que el label no desborde si es largo
-                overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: isAccent ? Colors.red.shade700 : Colors.black87,
+              color: isAccent ? Colors.red.shade600 : Colors.black87,
               height: 1.3,
             ),
-            maxLines: 2, // <-- Limitamos la dirección a 2 líneas
-          overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -111,66 +110,67 @@ class OrderDetailsModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isSmallScreen = MediaQuery.of(context).size.width < 600;
-    final double maxModalWidth = isSmallScreen 
-        ? MediaQuery.of(context).size.width * 0.98
-        : MediaQuery.of(context).size.width * 0.85;
+    final double maxModalWidth = isSmallScreen
+        ? MediaQuery.of(context).size.width * 0.95
+        : MediaQuery.of(context).size.width * 0.80;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 12 : 20,
-        vertical: isSmallScreen ? 12 : 20,
+        horizontal: isSmallScreen ? 8 : 16,
+        vertical: isSmallScreen ? 8 : 16,
       ),
-      elevation: 8,
+      elevation: 0,
+      backgroundColor: Colors.transparent,
       child: Container(
         constraints: BoxConstraints(
           maxWidth: maxModalWidth,
-          maxHeight: MediaQuery.of(context).size.height * 0.92,
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
         ),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
           color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // --- ENCABEZADO ---
+            // --- HEADER ---
             Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
-                horizontal: isSmallScreen ? 20 : 24,
+                horizontal: isSmallScreen ? 16 : 24,
                 vertical: isSmallScreen ? 16 : 20,
               ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.amber.shade600, Colors.orange.shade600],
+                  colors: [const Color.fromARGB(255, 249, 171, 37), const Color.fromARGB(255, 223, 179, 32)],
                   begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  end: Alignment.bottomRight, 
                 ),
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.orange.shade300,
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.receipt_long, 
-                      color: Colors.white, 
-                      size: isSmallScreen ? 20 : 24
+                      Icons.receipt_long,
+                      color: Colors.white,
+                      size: isSmallScreen ? 22 : 26,
                     ),
                   ),
                   SizedBox(width: isSmallScreen ? 8 : 12),
@@ -181,16 +181,17 @@ class OrderDetailsModal extends StatelessWidget {
                         Text(
                           'Pedido #${order.id}',
                           style: TextStyle(
-                            fontSize: isSmallScreen ? 14 : 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: isSmallScreen ? 16 : 18,
+                            fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
                         ),
                         Text(
                           'Detalles completos del pedido',
                           style: TextStyle(
-                            fontSize: isSmallScreen ? 11 : 13,
-                            color: Colors.white.withOpacity(0.9),
+                            fontSize: isSmallScreen ? 12 : 14,
+                            color: Colors.white.withOpacity(0.85),
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
@@ -198,26 +199,26 @@ class OrderDetailsModal extends StatelessWidget {
                   ),
                   IconButton(
                     icon: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withOpacity(0.15),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.close, 
-                        color: Colors.white, 
-                        size: isSmallScreen ? 18 : 20
+                        Icons.close,
+                        color: Colors.white,
+                        size: isSmallScreen ? 20 : 22,
                       ),
                     ),
                     onPressed: () => Navigator.of(context).pop(),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 40),
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
             ),
-            
-            // --- CONTENIDO PRINCIPAL CON SCROLL ---
+
+            // --- MAIN CONTENT WITH SCROLL ---
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
@@ -225,7 +226,7 @@ class OrderDetailsModal extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // SECCIÓN INFORMACIÓN GENERAL
+                    // GENERAL INFORMATION SECTION
                     _buildSectionHeader(
                       title: 'Información General',
                       icon: Icons.info_outline,
@@ -234,7 +235,7 @@ class OrderDetailsModal extends StatelessWidget {
                     ),
                     SizedBox(height: isSmallScreen ? 16 : 20),
 
-                    // Grid de información responsive
+                    // Responsive Grid
                     LayoutBuilder(
                       builder: (context, constraints) {
                         final crossAxisCount = constraints.maxWidth < 400 ? 1 : 2;
@@ -244,9 +245,9 @@ class OrderDetailsModal extends StatelessWidget {
                           mainAxisSpacing: isSmallScreen ? 12 : 16,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          childAspectRatio: crossAxisCount == 1 ? 
-                            (isSmallScreen ? 2.8 : 3.2) : 
-                            (isSmallScreen ? 2.2 : 2.8),
+                          childAspectRatio: crossAxisCount == 1
+                              ? (isSmallScreen ? 3.0 : 3.5)
+                              : (isSmallScreen ? 2.4 : 3.0),
                           children: [
                             _buildInfoCard(
                               'Descripción',
@@ -273,7 +274,7 @@ class OrderDetailsModal extends StatelessWidget {
                       },
                     ),
 
-                    // Observaciones especiales
+                    // Special Observations
                     if (order.observaciones != null && order.observaciones!.isNotEmpty)
                       Padding(
                         padding: EdgeInsets.only(top: isSmallScreen ? 16 : 20),
@@ -284,12 +285,12 @@ class OrderDetailsModal extends StatelessWidget {
                           isAccent: true,
                         ),
                       ),
-                    
+
                     SizedBox(height: isSmallScreen ? 24 : 32),
                     _buildDivider(),
                     SizedBox(height: isSmallScreen ? 24 : 32),
 
-                    // SECCIÓN PRODUCTOS
+                    // PRODUCTS SECTION
                     _buildSectionHeader(
                       title: 'Productos (${order.productos.length})',
                       icon: Icons.inventory_2_outlined,
@@ -298,16 +299,15 @@ class OrderDetailsModal extends StatelessWidget {
                     ),
                     SizedBox(height: isSmallScreen ? 16 : 20),
 
-                    // Lista de productos
+                    // Product List
                     ...order.productos.asMap().entries.map((entry) {
                       final index = entry.key;
                       final product = entry.value;
                       final style = _getProductStatusStyle(product.estado);
-                      
+
                       return Container(
                         margin: EdgeInsets.only(
-                          bottom: index == order.productos.length - 1 ? 0 : 
-                                 (isSmallScreen ? 12 : 16),
+                          bottom: index == order.productos.length - 1 ? 0 : (isSmallScreen ? 12 : 16),
                         ),
                         padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
                         decoration: BoxDecoration(
@@ -316,30 +316,30 @@ class OrderDetailsModal extends StatelessWidget {
                           border: Border.all(color: style['borderColor']!),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.shade100,
+                              color: Colors.grey.withOpacity(0.1),
                               blurRadius: 12,
-                              offset: const Offset(0, 3),
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Encabezado del producto
+                            // Product Header
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(6),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: Colors.blue.shade50,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
                                     '${index + 1}',
                                     style: TextStyle(
-                                      fontSize: isSmallScreen ? 10 : 12,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: isSmallScreen ? 12 : 14,
+                                      fontWeight: FontWeight.w700,
                                       color: Colors.blue.shade800,
                                     ),
                                   ),
@@ -352,38 +352,39 @@ class OrderDetailsModal extends StatelessWidget {
                                       Text(
                                         product.nombre,
                                         style: TextStyle(
-                                          fontWeight: FontWeight.bold, 
-                                          fontSize: isSmallScreen ? 14 : 16,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: isSmallScreen ? 15 : 17,
                                           height: 1.4,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       SizedBox(height: isSmallScreen ? 6 : 8),
-                                      // Estado con icono
+                                      // Status Badge
                                       Container(
                                         padding: EdgeInsets.symmetric(
-                                          horizontal: isSmallScreen ? 8 : 10,
-                                          vertical: isSmallScreen ? 4 : 6,
+                                          horizontal: isSmallScreen ? 10 : 12,
+                                          vertical: isSmallScreen ? 5 : 6,
                                         ),
                                         decoration: BoxDecoration(
                                           color: style['bgColor'],
                                           borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(color: style['borderColor']!, width: 0.5),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(
                                               style['icon'],
-                                              size: isSmallScreen ? 12 : 14,
+                                              size: isSmallScreen ? 14 : 16,
                                               color: style['color'],
                                             ),
                                             SizedBox(width: isSmallScreen ? 4 : 6),
                                             Text(
                                               product.estado,
                                               style: TextStyle(
-                                                color: style['color'], 
-                                                fontSize: isSmallScreen ? 10 : 12, 
+                                                color: style['color'],
+                                                fontSize: isSmallScreen ? 11 : 12,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
@@ -399,15 +400,15 @@ class OrderDetailsModal extends StatelessWidget {
                                     Text(
                                       '\$${product.subtotal.toStringAsFixed(2)}',
                                       style: TextStyle(
-                                        fontWeight: FontWeight.bold, 
+                                        fontWeight: FontWeight.w700,
                                         color: Colors.green.shade600,
-                                        fontSize: isSmallScreen ? 16 : 18,
+                                        fontSize: isSmallScreen ? 17 : 19,
                                       ),
                                     ),
                                     Text(
                                       'Subtotal',
                                       style: TextStyle(
-                                        fontSize: isSmallScreen ? 10 : 12,
+                                        fontSize: isSmallScreen ? 11 : 12,
                                         color: Colors.grey.shade600,
                                       ),
                                     ),
@@ -417,44 +418,45 @@ class OrderDetailsModal extends StatelessWidget {
                             ),
                             SizedBox(height: isSmallScreen ? 12 : 16),
 
-                            // Detalles del producto
+                            // Product Details
                             Container(
-                              padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+                              padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade50,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade100),
                               ),
-                              child: isSmallScreen 
+                              child: isSmallScreen
                                   ? _buildProductDetailsVertical(product)
                                   : _buildProductDetailsHorizontal(product),
                             ),
-                            
-                            // Nota del producto
+
+                            // Product Note
                             if (product.nota != null && product.nota!.isNotEmpty)
                               Padding(
                                 padding: EdgeInsets.only(top: isSmallScreen ? 12 : 16),
                                 child: Container(
                                   width: double.infinity,
-                                  padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+                                  padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
                                   decoration: BoxDecoration(
                                     color: Colors.orange.shade50,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.orange.shade200),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.orange.shade100),
                                   ),
                                   child: Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Icon(
                                         Icons.note_outlined,
-                                        size: isSmallScreen ? 14 : 16,
+                                        size: isSmallScreen ? 16 : 18,
                                         color: Colors.orange.shade700,
                                       ),
-                                      SizedBox(width: isSmallScreen ? 6 : 8),
+                                      SizedBox(width: isSmallScreen ? 8 : 10),
                                       Expanded(
                                         child: Text(
                                           product.nota!,
                                           style: TextStyle(
-                                            fontSize: isSmallScreen ? 12 : 13, 
+                                            fontSize: isSmallScreen ? 13 : 14,
                                             color: Colors.orange.shade800,
                                             height: 1.4,
                                           ),
@@ -469,14 +471,14 @@ class OrderDetailsModal extends StatelessWidget {
                       );
                     }).toList(),
 
-                    // Espacio final para scroll
-                    SizedBox(height: isSmallScreen ? 8 : 16),
+                    // Final Spacing for Scroll
+                    SizedBox(height: isSmallScreen ? 16 : 24),
                   ],
                 ),
               ),
             ),
-            
-            // --- PIE DE PÁGINA ---
+
+            // --- FOOTER ---
             Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(
@@ -485,13 +487,13 @@ class OrderDetailsModal extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                border: Border(top: BorderSide(color: Colors.grey.shade100)),
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
               ),
-              child: isSmallScreen 
+              child: isSmallScreen
                   ? _buildFooterVertical(context, order)
                   : _buildFooterHorizontal(context, order),
             ),
@@ -502,32 +504,32 @@ class OrderDetailsModal extends StatelessWidget {
   }
 
   Widget _buildSectionHeader({
-    required String title, 
-    required IconData icon, 
+    required String title,
+    required IconData icon,
     required Color color,
     required bool isSmallScreen,
   }) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
-            icon, 
-            size: isSmallScreen ? 18 : 20, 
-            color: color
+            icon,
+            size: isSmallScreen ? 20 : 22,
+            color: color,
           ),
         ),
-        SizedBox(width: isSmallScreen ? 8 : 12),
+        SizedBox(width: isSmallScreen ? 10 : 12),
         Text(
           title,
           style: TextStyle(
-            fontSize: isSmallScreen ? 15 : 17,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade800,
+            fontSize: isSmallScreen ? 16 : 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.grey.shade900,
           ),
         ),
       ],
@@ -537,320 +539,273 @@ class OrderDetailsModal extends StatelessWidget {
   Widget _buildDivider() {
     return Container(
       height: 1,
+      margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
+            Colors.grey.shade100,
             Colors.grey.shade200,
-            Colors.grey.shade300,
-            Colors.grey.shade200,
+            Colors.grey.shade100,
           ],
         ),
       ),
     );
   }
 
+  Widget _buildProductDetailsHorizontal(Producto product) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Quantity
+          Expanded(
+            child: _buildEnhancedProductDetail(
+              'Cantidad',
+              '${product.cantidad}',
+              Icons.format_list_numbered_outlined,
+              Colors.blue.shade600,
+              'und',
+              false,
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 48,
+            color: Colors.grey.shade200,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+          // Unit Price
+          Expanded(
+            child: _buildEnhancedProductDetail(
+              'Precio Unit.',
+              '\$${product.precio.toStringAsFixed(2)}',
+              Icons.attach_money_outlined,
+              Colors.green.shade600,
+              'c/u',
+              false,
+            ),
+          ),
+          Container(
+            width: 1,
+            height: 48,
+            color: Colors.grey.shade200,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+          ),
+          // Total
+          Expanded(
+            child: _buildEnhancedProductDetail(
+              'Total',
+              '\$${product.subtotal.toStringAsFixed(2)}',
+              Icons.calculate_outlined,
+              Colors.orange.shade600,
+              'subtotal',
+              false,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-Widget _buildProductDetailsHorizontal(Producto product) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Cantidad
-        Expanded(
-          child: _buildEnhancedProductDetail(
-            'Cantidad',
-            '${product.cantidad}',
-            Icons.format_list_numbered_outlined,
-            Colors.blue.shade600,
-            'und',
-            false,
+  Widget _buildProductDetailsVertical(Producto product) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      child: Column(
+        children: [
+          // Top Row
+          Row(
+            children: [
+              Expanded(
+                child: _buildEnhancedProductDetail(
+                  'Cantidad',
+                  '${product.cantidad}',
+                  Icons.format_list_numbered_outlined,
+                  Colors.blue.shade600,
+                  'und',
+                  true,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 40,
+                color: Colors.grey.shade200,
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              Expanded(
+                child: _buildEnhancedProductDetail(
+                  'Precio Unit.',
+                  '\$${product.precio.toStringAsFixed(2)}',
+                  Icons.attach_money_outlined,
+                  Colors.green.shade600,
+                  'c/u',
+                  true,
+                ),
+              ),
+            ],
           ),
-        ),
-        
-        // Separador
-        Container(
-          width: 1,
-          height: 40,
-          color: Colors.grey.shade300,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-        ),
-        
-        // Precio Unitario
-        Expanded(
-          child: _buildEnhancedProductDetail(
-            'Precio Unit.',
-            '\$${product.precio.toStringAsFixed(2)}',
-            Icons.attach_money_outlined,
-            Colors.green.shade600,
-            'c/u',
-            false,
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            color: Colors.grey.shade100,
           ),
-        ),
-        
-        // Separador
-        Container(
-          width: 1,
-          height: 40,
-          color: Colors.grey.shade300,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-        ),
-        
-        // Total
-        Expanded(
-          child: _buildEnhancedProductDetail(
-            'Total',
+          // Bottom Row - Total
+          _buildEnhancedProductDetail(
+            'Total del Producto',
             '\$${product.subtotal.toStringAsFixed(2)}',
             Icons.calculate_outlined,
             Colors.orange.shade600,
-            'subtotal',
-            false,
+            'total',
+            true,
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildProductDetailsVertical(Producto product) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-    child: Column(
-      children: [
-        // Fila superior
-        Row(
-          children: [
-            Expanded(
-              child: _buildEnhancedProductDetail(
-                'Cantidad',
-                '${product.cantidad}',
-                Icons.format_list_numbered_outlined,
-                Colors.blue.shade600,
-                'und',
-                true,
-              ),
-            ),
-            Container(
-              width: 1,
-              height: 30,
-              color: Colors.grey.shade300,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            Expanded(
-              child: _buildEnhancedProductDetail(
-                'Precio Unit.',
-                '\$${product.precio.toStringAsFixed(2)}',
-                Icons.attach_money_outlined,
-                Colors.green.shade600,
-                'c/u',
-                true,
-              ),
-            ),
-          ],
-        ),
-        
-        // Separador entre filas
-        Container(
-          height: 1,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          color: Colors.grey.shade200,
-        ),
-        
-        // Fila inferior - Total
-        _buildEnhancedProductDetail(
-          'Total del Producto',
-          '\$${product.subtotal.toStringAsFixed(2)}',
-          Icons.calculate_outlined,
-          Colors.orange.shade600,
-          'total',
-          true,
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildEnhancedProductDetail(
-  String label, 
-  String value, 
-  IconData icon, 
-  Color color, 
-  String type,
-  bool isSmall
-) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.grey.shade100),
-    ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Icono y etiqueta
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon, 
-                size: isSmall ? 12 : 14, 
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: isSmall ? 10 : 11,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 4),
-        
-        // Valor
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isSmall ? 13 : 14,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        
-        const SizedBox(height: 2),
-        
-        // Tipo/Unidad
-        Text(
-          _getTypeText(type),
-          style: TextStyle(
-            fontSize: isSmall ? 9 : 10,
-            color: Colors.grey.shade500,
-            fontWeight: FontWeight.w500,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
-}
-
-String _getTypeText(String type) {
-  switch (type) {
-    case 'und':
-      return 'unidades';
-    case 'c/u':
-      return 'cada uno';
-    case 'subtotal':
-      return 'subtotal';
-    case 'total':
-      return 'total producto';
-    default:
-      return '';
-  }
-}
-
-
-  Widget _buildProductDetail(String label, String value, IconData icon, Color color, bool isSmall) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon, 
-            size: isSmall ? 12 : 14, 
-            color: color
-          ),
-        ),
-        SizedBox(height: isSmall ? 4 : 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isSmall ? 9 : 10,
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isSmall ? 11 : 12,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  Widget _buildEnhancedProductDetail(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    String type,
+    bool isSmall,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Icon and Label
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: isSmall ? 14 : 16,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: isSmall ? 11 : 12,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Value
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isSmall ? 14 : 15,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          // Type/Unit
+          Text(
+            _getTypeText(type),
+            style: TextStyle(
+              fontSize: isSmall ? 10 : 11,
+              color: Colors.grey.shade500,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getTypeText(String type) {
+    switch (type) {
+      case 'und':
+        return 'unidades';
+      case 'c/u':
+        return 'cada uno';
+      case 'subtotal':
+        return 'subtotal';
+      case 'total':
+        return 'total producto';
+      default:
+        return '';
+    }
   }
 
   Widget _buildFooterHorizontal(BuildContext context, Pedido order) {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'VALOR TOTAL DEL PEDIDO',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'VALOR TOTAL DEL PEDIDO',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
               ),
-              const SizedBox(height: 4),
-              Text(
-                '\$${order.totalAPagar.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange.shade700,
-                  height: 1.2,
-                ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '\$${order.totalAPagar.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: Colors.blue.shade700,
+                height: 1.2,
               ),
-           
-            ],
-          ),
+            ),
+          ],
         ),
         ElevatedButton.icon(
           onPressed: () => Navigator.of(context).pop(),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.grey.shade800,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            backgroundColor: Colors.blue.shade600,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade300),
             ),
-            elevation: 1,
-            shadowColor: Colors.grey.shade200,
+            elevation: 2,
+            shadowColor: Colors.blue.shade200,
           ),
-          icon: const Icon(Icons.close, size: 18),
+          icon: const Icon(Icons.close, size: 20),
           label: const Text(
             'Cerrar Detalles',
-            style: TextStyle(fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -866,44 +821,43 @@ String _getTypeText(String type) {
             Text(
               'VALOR TOTAL DEL PEDIDO',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 color: Colors.grey.shade600,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               '\$${order.totalAPagar.toStringAsFixed(2)}',
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange.shade700,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.blue.shade700,
                 height: 1.2,
               ),
             ),
-          
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () => Navigator.of(context).pop(),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.grey.shade800,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              backgroundColor: const Color.fromARGB(255, 207, 158, 10),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade300),
               ),
-              elevation: 1,
+              elevation: 2,
+              shadowColor: const Color.fromARGB(255, 167, 105, 12),
             ),
-            icon: const Icon(Icons.close, size: 18),
+            icon: const Icon(Icons.close, size: 20),
             label: const Text(
               'Cerrar Detalles',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
         ),

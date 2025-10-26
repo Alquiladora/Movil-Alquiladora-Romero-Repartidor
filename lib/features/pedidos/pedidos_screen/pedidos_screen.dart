@@ -448,7 +448,7 @@ class _DynamicOrderCardState extends State<DynamicOrderCard> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize
-            .min, // Hace que el chip sea tan ancho como el contenido
+            .min, 
         children: [
           Icon(
             style['icon'],
@@ -612,7 +612,10 @@ void _confirmCancellation(BuildContext context, Pedido pedido) {
 
             // --- Información de Contacto y Dirección ---
             _buildInfoRow(
-                Icons.location_on_outlined, pedido.direccion), // DATO DINÁMICO
+              Icons.location_on_outlined,
+              '${pedido.localidad} ${pedido.municipio} ${pedido.estado}',
+            ),
+// DATO DINÁMICO
             const SizedBox(height: 8),
             _buildInfoRow(Icons.calendar_today_outlined,
                 fechaFormateada), // DATO DINÁMICO
