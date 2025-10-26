@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/widget/layaout_appbar.dart';
@@ -16,8 +17,16 @@ import 'core/services/ape_service_home.dart';
 import 'core/services/api_service_pedidos.dart';
 import 'features/pedidos/pedidos_bloc/pedidos_bloc.dart';
 
-void main() {
-  final apiServicePedidos = ApiServicePedidos();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  print('--- INICIALIZANDO FORMATO DE FECHA ---');
+  try {
+    await initializeDateFormatting('es', null);
+    print('--- FORMATO DE FECHA INICIALIZADO CORRECTAMENTE ---');
+  } catch (e) {
+    print('--- ERROR AL INICIALIZAR FORMATO DE FECHA: $e ---'); 
+  }
+ // final apiServicePedidos = ApiServicePedidos(); 
   runApp(const MyApp());
 }
 
@@ -26,14 +35,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Usamos MultiRepositoryProvider para proveer todos los servicios a la app
+   
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<AuthService>(
           create: (context) => AuthService(),
         ),
         RepositoryProvider<LayaoutService>(
-          // <-- AÑADIMOS EL SERVICIO DEL LAYOUT
+        
           create: (context) => LayaoutService(),
         ),
         RepositoryProvider<HomeService>(create: (_) => HomeService()),
@@ -48,7 +57,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/': (context) => BlocProvider(
                 create: (context) => LoginBloc(
-                  // Leemos el servicio del contexto
+                 
                   authService: context.read<AuthService>(),
                 ),
                 child: const LoginScreen(),
