@@ -8,7 +8,7 @@ class HomeService {
 
   Future<Map<String, dynamic>> getHome() async {
     final token = await _tokenService.getToken();
-    final url = Uri.parse('$baseUrl/usuarios/movil-home');
+    final url = Uri.parse('$baseUrl/api/usuarios/movil-home');
 
     if (token == null) {
       return {
