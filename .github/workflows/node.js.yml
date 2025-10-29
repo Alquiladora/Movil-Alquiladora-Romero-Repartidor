@@ -1,0 +1,46 @@
+name: Flutter CI - Build Android APK
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Clonar el repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Instalar Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.3"  # Cambia según tu versión
+          channel: "stable"
+
+      # 3️⃣ Verificar versión e instalar dependencias
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 4️⃣ Compilar el APK en modo release
+      - name: Build release APK
+        run: flutter build apk --release
+
+      # 5️⃣ Subir el APK generado como artefacto
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RentFast-Android
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      # 6️⃣ Mensaje de éxito
+      - name: Success message
+        if: success()
+        run: echo "✅ Build Flutter Android completado correctamente"
