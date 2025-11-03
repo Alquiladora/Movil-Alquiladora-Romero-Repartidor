@@ -1,8 +1,14 @@
+import 'package:RentFast/features/repartidor_history/presentation/bloc/history_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/dashboard/presentation/home_screen/home_screen.dart';
 import '../../features/layaout/layaout_bloc.dart';
 import '../../features/layaout/stats_layaout.dart';
+import '../../features/pedidos/pedidos_screen/pedidos_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../features/repartidor_history/presentation/screens/history_screen.dart';
+import '../../features/repartidor_history/presentation/bloc/history_bloc.dart';
+import '../../core/services/api_service_history.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -14,7 +20,6 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
 
- 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -53,9 +58,12 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     final List<Widget> widgetOptions = <Widget>[
       const HomeScreen(), // Ahora se crea en el contexto correcto
-      const Center(child: Text('Pantalla de Pedidos')),
+      const PedidoScreen(),
       const Center(child: Text('Pantalla de Perfil')),
-      const Center(child: Text('Pantalla de Historial')),
+      BlocProvider(
+        create: (_) => HistoryBloc(HistoryService())..add(LoadHistory()),
+        child: const HistoryScreen(),
+      ),
       const Center(child: Text('Pantalla de Notificaciones')),
     ];
 
