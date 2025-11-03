@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../utils/connection.dart';  // api('/api/...') y baseUrl
+import '../utils/connection.dart';  
 import 'token_service.dart';
 
 class HistoryService {
@@ -14,7 +14,9 @@ class HistoryService {
     }
 
     // Si tu backend usa el prefijo /api (que sí), mantenlo:
-    final url = api('/api/repartidor/repartidor/pedidos-historico');
+    final url = Uri.parse(
+      '$baseUrl/repartidor/repartidor/pedidos-historico',
+    );
 
     final resp = await http
         .get(
