@@ -46,7 +46,7 @@ class AuthService {
        print("url deviceType: $deviceType");
       final ip = deviceAndIpInfo['ip']!;
         print("url ip: $ip");
-      final url = Uri.parse('$baseUrl/api/usuarios/login-movil');
+      final url = Uri.parse('$baseUrl/usuarios/login-movil');
 
       print("url de login: $url");
       final response = await http.post(
