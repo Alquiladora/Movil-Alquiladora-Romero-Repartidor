@@ -53,7 +53,7 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> widgetOptions = <Widget>[
-      const HomeScreen(), // Ahora se crea en el contexto correcto
+      const HomeScreen(), 
       const PedidoScreen(),
       const Center(child: Text('Pantalla de Perfil')),
       const Center(child: Text('Pantalla de Historial')),

@@ -11,7 +11,6 @@ class ApiServicePedidos {
   ApiServicePedidos()
       : _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
-          
           connectTimeout: const Duration(seconds: 45),
           receiveTimeout: const Duration(seconds: 45),
         ));
@@ -23,6 +22,7 @@ class ApiServicePedidos {
       if (token == null) {
         throw Exception('Usuario no autenticado.');
       }
+      print("Datos impreso $baseUrl");
 
       final response = await _dio.get(
         '/repartidor/repartidor/pedidos-hoy',
