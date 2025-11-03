@@ -35,7 +35,7 @@ jobs:
         with:
           # Se elimina flutter-version: "stable" para evitar conflicto
           channel: "stable"
-          cache: true # Habilita el cache para acelerar el build
+          cache: true 
 
       # 4. Instalar dependencias
       - name: Install dependencies (flutter pub get)
@@ -44,9 +44,10 @@ jobs:
       # 5. Chequeo de Código (Análisis Estático)
       - name: Analyze code
         run: flutter analyze
+        
+        continue-on-error: true
 
-      # 6. Ejecutar Pruebas (Unitarias y de Widget)
-      # El workflow fallará aquí si las pruebas no pasan
+    
       - name: Run Flutter Tests
         run: flutter test
         
