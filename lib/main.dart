@@ -19,10 +19,10 @@ import 'features/pedidos/pedidos_bloc/pedidos_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  print('--- INICIALIZANDO FORMATO DE FECHA ---');
+ 
   try {
     await initializeDateFormatting('es', null);
-    print('--- FORMATO DE FECHA INICIALIZADO CORRECTAMENTE ---');
+   
   } catch (e) {
     print('--- ERROR AL INICIALIZAR FORMATO DE FECHA: $e ---'); 
   }
