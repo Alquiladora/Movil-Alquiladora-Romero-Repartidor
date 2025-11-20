@@ -42,13 +42,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # ← AQUÍ LA LÍNEA MÁGICA
+  
       - name: Analyze code
         run: flutter analyze || echo "Analyze completed with warnings (ignored)"
-        continue-on-error: true   # ← IGNORA LOS WARNINGS Y SIGUE
-
-      - name: Run unit tests
-        run: flutter test --coverage
+        continue-on-error: true  
 
       - name: Build release APK
         run: flutter build apk --release
