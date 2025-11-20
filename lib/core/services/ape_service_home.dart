@@ -2,18 +2,20 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../utils/connection.dart';
 import 'token_service.dart';
+import 'dart:developer';
 
 class HomeService {
   final TokenService _tokenService = TokenService();
 
   Future<Map<String, dynamic>> getHome() async {
     final token = await _tokenService.getToken();
-    final url = Uri.parse('$baseUrl/api/usuarios/movil-home');
+    final url = Uri.parse('$baseUrl/usuarios/movil-home');
 
     if (token == null) {
       return {
         'success': false,
-        'message': 'Usuario no autenticado',
+        'message': 'AUTH_REQUIRED_401',
+        'isAuthError': true,
       };
     }
 
@@ -26,13 +28,12 @@ class HomeService {
         },
       );
 
-      print("📡 Respuesta del servidor (status): ${response.statusCode}");
-      print("📄 Body recibido: ${response.body}");
+    
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // Validar estructura del JSON recibido
+       
         if (data != null && data is Map<String, dynamic>) {
           return {
             'success': true,
@@ -44,15 +45,25 @@ class HomeService {
             'message': 'Formato de respuesta inválido.',
           };
         }
-      } else {
+     } else if (response.statusCode == 401) {
+        await _tokenService.deleteToken();
+        log('❌ SESIÓN CADUCADA (401) en HomeService. Token eliminado.');
+        return {
+          'success': false,
+          'message': 'AUTH_REQUIRED_401',
+          'isAuthError': true, 
+        };
+      } 
+      else {
+        
         return {
           'success': false,
           'message':
-              'Error del servidor (${response.statusCode}): ${response.body}',
+            'Error del servidor (${response.statusCode}): ${response.body}',
         };
       }
     } catch (e) {
-      print("❌ Error de conexión en HomeService: $e");
+      log("❌ Error de conexión en HomeService: $e");
       return {
         'success': false,
         'message': 'No se pudo conectar al servidor.',

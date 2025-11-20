@@ -1,3 +1,4 @@
+import 'package:RentFast/core/services/notificacion_service.dart';
 import 'package:RentFast/features/repartidor_history/presentation/bloc/history_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +10,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../features/repartidor_history/presentation/screens/history_screen.dart';
 import '../../features/repartidor_history/presentation/bloc/history_bloc.dart';
 import '../../core/services/api_service_history.dart';
+import '../../features/perfil/screens/screen_perfil.dart';
+import '../../features/notificaciones/screen/notificacion_screen.dart';
+import '../../features/dashboard/presentation/home_bloc/home_bloc.dart';
+import '../../features/dashboard/presentation/home_bloc/home_state.dart';
+import '../utils/connection.dart';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/token_service.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -17,8 +26,24 @@ class MainLayout extends StatefulWidget {
   State<MainLayout> createState() => _MainLayoutState();
 }
 
+bool _isLoggingOut = false;
+
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
+
+  void _handleAuthRedirect() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Sesión expirada. Redirigiendo...'),
+          backgroundColor: Colors.red),
+    );
+    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+  }
+
+  bool _isAuthErrorState(dynamic state) {
+    if (state is HomeError && state.message == 'AUTH_REQUIRED_401') return true;
+    return false;
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -35,21 +60,72 @@ class _MainLayoutState extends State<MainLayout> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Cerrar Sesión'),
-        content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pushReplacementNamed('/');
-            },
-            child: const Text('Cerrar Sesión'),
-          ),
-        ],
+        content: _isLoggingOut
+            ? const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFFF7BC3C)),
+                  SizedBox(width: 20),
+                  Text("Cerrando sesión..."),
+                ],
+              )
+            : const Text('¿Estás seguro de que quieres cerrar sesión?'),
+        actions: _isLoggingOut
+            ? null 
+            : [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    setState(() {
+                      _isLoggingOut = true; 
+                    });
+
+                    final navigator = Navigator.of(context);
+
+                    try {
+                      await NotificationService().logout();
+                    
+
+                      final tokenService = TokenService();
+                      final authToken = await tokenService.getToken();
+
+                      if (authToken != null) {
+                        await Dio().post(
+                          '$baseUrl/usuarios/Delete/login-movil',
+                          options: Options(
+                            headers: {
+                              'Cookie': 'sesionToken=$authToken',
+                            },
+                            followRedirects: false,
+                            validateStatus: (status) => status! < 500,
+                          ),
+                        );
+                      
+                      }
+
+                      await tokenService.deleteToken();
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.clear();
+
+                      if (!mounted) return;
+                      navigator.pushNamedAndRemoveUntil(
+                          '/login', (route) => false);
+                    } catch (e) {
+                      print("Error al cerrar sesión: $e");
+                      if (!mounted) return;
+                      navigator.pushNamedAndRemoveUntil(
+                          '/login', (route) => false);
+                    }
+                  },
+                  child: const Text('Cerrar Sesión'),
+                ),
+              ],
       ),
     );
   }
@@ -57,103 +133,114 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> widgetOptions = <Widget>[
-      const HomeScreen(), // Ahora se crea en el contexto correcto
+      const HomeScreen(),
       const PedidoScreen(),
-      const Center(child: Text('Pantalla de Perfil')),
+      const RepartidorProfileScreen(),
       BlocProvider(
         create: (_) => HistoryBloc(HistoryService())..add(LoadHistory()),
         child: const HistoryScreen(),
       ),
-      const Center(child: Text('Pantalla de Notificaciones')),
+      const NotificacionScreen(),
     ];
 
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60.0),
-        child: AppBar(
-          backgroundColor: const Color.fromARGB(255, 247, 188, 60),
-          automaticallyImplyLeading: false,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Text(
-                'BIENVENIDO',
-                style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87),
-              ),
-              ClipRRect(
-                  borderRadius: BorderRadius.circular(11.0),
-                  child: Image.asset('assets/images/LogoOriginal.png',
-                      height: 40)),
-              IconButton(
-                  icon: const Icon(Icons.logout, color: Colors.black87),
-                  onPressed: _showLogoutDialog),
-            ],
-          ),
-        ),
-      ),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: widgetOptions,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onProfileTapped,
-        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
-        elevation: 2.0,
-        shape: const CircleBorder(),
-        child: BlocBuilder<LayoutBloc, LayoutState>(
-          builder: (context, state) {
-            //Cargamos Datos
-            if (state is LayoutLoading || state is LayoutInicial) {
-              return const CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2.0,
-              );
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<HomeBloc, HomeState>(
+          listener: (context, state) {
+            if (_isAuthErrorState(state)) {
+              _handleAuthRedirect();
             }
-            if (state is LayoutSuccess) {
-              final hasPhoto = state.fotoPerfilUrl.isNotEmpty;
-              final hasName = state.nombre.isNotEmpty;
-
-              if (hasPhoto) {
-                return ClipOval(
-                  child: Image.network(
-                    state.fotoPerfilUrl,
-                    fit: BoxFit.cover,
-                    width: 56,
-                    height: 56,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Center(
-                          child: Text(state.nombre[0].toUpperCase(),
-                              style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)));
-                    },
-                  ),
-                );
-              } else if (hasName) {
-                return Text(
-                  state.nombre[0].toUpperCase(),
-                  style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
-                );
-              }
-            }
-            return const Icon(Icons.person, color: Colors.white, size: 30);
           },
         ),
+      ],
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(60.0),
+          child: AppBar(
+            backgroundColor: const Color.fromARGB(255, 247, 188, 60),
+            automaticallyImplyLeading: false,
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'BIENVENIDO',
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87),
+                ),
+                ClipRRect(
+                    borderRadius: BorderRadius.circular(11.0),
+                    child: Image.asset('assets/images/LogoOriginal.png',
+                        height: 40)),
+                IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.black87),
+                    onPressed: _showLogoutDialog),
+              ],
+            ),
+          ),
+        ),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: widgetOptions,
+        ),
+        floatingActionButton: FloatingActionButton(
+          heroTag: null,
+          onPressed: _onProfileTapped,
+          backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+          elevation: 2.0,
+          shape: const CircleBorder(),
+          child: BlocBuilder<LayoutBloc, LayoutState>(
+            builder: (context, state) {
+              //Cargamos Datos
+              if (state is LayoutLoading || state is LayoutInicial) {
+                return const CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.0,
+                );
+              }
+              if (state is LayoutSuccess) {
+                final hasPhoto = state.fotoPerfilUrl.isNotEmpty;
+                final hasName = state.nombre.isNotEmpty;
+
+                if (hasPhoto) {
+                  return ClipOval(
+                    child: Image.network(
+                      state.fotoPerfilUrl,
+                      fit: BoxFit.cover,
+                      width: 56,
+                      height: 56,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                            child: Text(state.nombre[0].toUpperCase(),
+                                style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white)));
+                      },
+                    ),
+                  );
+                } else if (hasName) {
+                  return Text(
+                    state.nombre[0].toUpperCase(),
+                    style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  );
+                }
+              }
+              return const Icon(Icons.person, color: Colors.white, size: 30);
+            },
+          ),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: _buildFancyBottomNavBar(),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _buildFancyBottomNavBar(),
     );
   }
 
-  // El footer con la animación se mantiene igual, ya que te gustó.
   Widget _buildFancyBottomNavBar() {
     return Container(
       height: 70,

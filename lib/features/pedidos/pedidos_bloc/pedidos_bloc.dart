@@ -4,15 +4,19 @@ import './pedidos_event.dart';
 import './pedidos_stat.dart';
 import '../../../core/services/api_service_pedidos.dart';
 import '../../../core/models/model_pedidos.dart'; 
+import '../../../core/utils/app_events.dart';
 
-//Creamo sla clase
+
 class AssignedOrdersBloc extends Bloc<AssignedOrdersEvent, AssignedOrdersState> {
   //Accedemos ala clase
   final ApiServicePedidos _apiService;
 
+  late final StreamSubscription _nuevoPedidoSubscription;
+
+
   //Creamos el constructur donde iniciamos las funciones
   AssignedOrdersBloc(this._apiService) : super(AssignedOrdersInitial()) {
-    print("--- ¡¡¡AssignedOrdersBloc CREADO!!! ---");
+  
     on<FetchAssignedOrders>(_onFetchAssignedOrders);
     on<UpdateOrderStatus>(_onUpdateOrderStatus);
     on<CancelOrder>(_onCancelOrder);
@@ -21,6 +25,16 @@ class AssignedOrdersBloc extends Bloc<AssignedOrdersEvent, AssignedOrdersState> 
     on<SubmitOrderIncident>(
         _onSubmitOrderIncident);
 
+        _nuevoPedidoSubscription = appEventBus.on<NuevoPedidoEvent>().listen((event) {
+      print("¡NOTIFICACIÓN! Nuevo pedido asignado → recargando lista automáticamente");
+      add(FetchAssignedOrders()); // ← Recarga la lista sin que el usuario haga nada
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _nuevoPedidoSubscription.cancel();
+    return super.close();
   }
 
 

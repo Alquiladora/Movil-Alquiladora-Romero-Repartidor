@@ -12,12 +12,9 @@ class HistoryService {
     if (token == null) {
       throw Exception('Usuario no autenticado');
     }
-
-    // Si tu backend usa el prefijo /api (que sí), mantenlo:
     final url = Uri.parse(
       '$baseUrl/repartidor/repartidor/pedidos-historico',
     );
-
     final resp = await http
         .get(
           url,

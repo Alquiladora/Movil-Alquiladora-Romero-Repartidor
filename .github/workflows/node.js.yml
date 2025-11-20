@@ -1,6 +1,5 @@
 name: Flutter CI - Build & Test Android APK
 
-# Triggers: Se ejecuta en push/PR a main/develop, o manualmente
 on:
   push:
     branches: ["main", "develop"]
@@ -10,63 +9,59 @@ on:
 
 jobs:
   build-and-test:
-    # Usar la última versión de Ubuntu
     runs-on: ubuntu-latest
-    # Tiempo límite para el job
-    timeout-minutes: 15 
+    timeout-minutes: 20
 
     steps:
-      # 1. Clonar el repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Instalar Java (Requerido por Gradle >= 7.3 y Flutter >= 3.x)
-      - name: Setup Java JDK (Zulu 17)
+      - name: Setup Java (Zulu 17)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. Instalar Flutter (¡CORRECCIÓN IMPORTANTE!)
-      # Tu pubspec.lock requiere Flutter >= 3.35.0. 
-      # Usamos 'stable' para obtener la última versión estable que cumpla con esto.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          # Se elimina flutter-version: "stable" para evitar conflicto
-          channel: "stable"
-          cache: true 
+          channel: stable
+          cache: true
 
-      # 4. Instalar dependencias
-      - name: Install dependencies (flutter pub get)
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.gradle
+          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.yaml') }}
+
+      - name: Install dependencies
         run: flutter pub get
 
-      # 5. Chequeo de Código (Análisis Estático)
       - name: Analyze code
         run: flutter analyze
 
-        continue-on-error: true
+      - name: Run unit tests
+        run: flutter test --coverage
 
-    
-    #   - name: Run Flutter Tests
-    #     run: flutter test
-        
-      # 7. Compilar el APK en modo release
       - name: Build release APK
         run: flutter build apk --release
 
-      # 8. Subir el APK generado como artefacto
-      - name: Upload release APK Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: RentFast-Android-APK
           path: build/app/outputs/flutter-apk/app-release.apk
 
-      # 9. Mensaje de éxito
-      # Este paso SÓLO se ejecuta si todos los anteriores (1-8) tienen éxito
-      - name: Success Message
+      - name: Upload coverage report to Codecov
         if: success()
-        # Se usa | para sintaxis de bloque y evitar errores de parseo con ':'
-        run: |
-          echo "✅ CI completada: Pruebas exitosas y APK subido como artefacto."
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/lcov.info
+          token: ${{secrets.CODECOV_TOKEN}}
 
+      - name: Success message
+        if: success()
+        run: |
+          echo "✅ CI completada: pruebas exitosas, cobertura enviada y APK generado."

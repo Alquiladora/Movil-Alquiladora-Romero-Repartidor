@@ -7,15 +7,18 @@ plugins {
     
 }
 
+
 android {
     namespace = "com.example.movil_alquiladora_romero_repartidor"
     compileSdk = flutter.compileSdkVersion
-    // ndkVersion = flutter.ndkVersion
-    ndkVersion = "27.0.12077973"
+    ndkVersion = flutter.ndkVersion
+    //ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -52,6 +55,8 @@ dependencies {
   implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
 
   implementation("com.google.firebase:firebase-analytics")
+  implementation("com.google.firebase:firebase-messaging")
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
 
 
   // Add the dependencies for any other desired Firebase products

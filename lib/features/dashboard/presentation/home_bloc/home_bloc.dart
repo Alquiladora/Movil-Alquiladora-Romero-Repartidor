@@ -15,13 +15,18 @@ class HomeBloc extends Bloc<HomeEvent,HomeState>{
 
     try{
       final result = await homeservice.getHome();
-
       if(result['success']){
         final data= result['data'];
         emit(HomeSuccess(data));
       }else{
+        final bool isAuthError = result['isAuthError'] == true;
+    if (isAuthError) {
+        emit(HomeError('AUTH_REQUIRED_401')); 
+    } else {
         emit(HomeError(result['message'] ?? 'Error desconocido.') );
-      }
+      
+    }
+    }
     }catch (e) {
       emit(HomeError('Error de conexión: ${e.toString()}'));
     }

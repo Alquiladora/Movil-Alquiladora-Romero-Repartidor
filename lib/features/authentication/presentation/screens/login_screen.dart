@@ -12,15 +12,15 @@ class LoginScreen extends StatefulWidget {
 }
 
 
- // Clase privada _ significa privada 
+
 class _LoginScreenState extends State<LoginScreen> {
-  //Creamos llave global para identificar y controlar el formulario
+
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  //Visilibilidad de pass
+
   bool _isPasswordVisible = false;
 
   @override
@@ -146,7 +146,7 @@ void _onLoginButtonPressed(){
                             },
                           ),
                           const SizedBox(height: 10),
-                          Align(alignment: Alignment.centerRight, child: TextButton(onPressed: () {}, child: const Text('¿Olvidaste tu Contraseña?', style: TextStyle(color: Color(0xFF2196F3))))),
+                        
                           const SizedBox(height: 20),
                           BlocBuilder<LoginBloc, LoginState>(
                             builder: (context, state) {

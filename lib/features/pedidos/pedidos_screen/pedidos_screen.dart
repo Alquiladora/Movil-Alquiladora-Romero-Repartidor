@@ -1,3 +1,4 @@
+import 'package:RentFast/core/services/api_service_pedidos.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +10,11 @@ import 'dart:developer';
 import './payment_screen.dart';
 import './detalles_screen.dart';
 import './incidenteModla.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PedidoScreen extends StatefulWidget {
   const PedidoScreen({super.key});
@@ -150,7 +156,6 @@ class _PedidosViewState extends State<PedidosView>
     with AutomaticKeepAliveClientMixin {
   bool _isDataFetched = false;
 
-  late String _newState;
   String _selectedOrderStatus = 'Todos';
   String _selectedMunicipio = 'Todos';
   final List<String> _orderStatusOptions = [
@@ -159,13 +164,19 @@ class _PedidosViewState extends State<PedidosView>
     'Enviando',
     'Recogiendo'
   ];
-  final Set<String> _allowedProvinces = {'hidalgo', 'veracruz', 'tamaulipas'};
 
-  List<Pedido> _allOrders = []; // Lista completa de pedidos
-  List<String> _municipiosOptions = ['Todos']; 
+  late final ApiServicePedidos _apiService;
+  bool _isMunicipiosLoading = true;
+  List<String> _municipiosOptions = ['Todos'];
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiService = ApiServicePedidos();
+  }
 
   @override
   void didChangeDependencies() {
@@ -173,14 +184,35 @@ class _PedidosViewState extends State<PedidosView>
 
     if (!_isDataFetched) {
       context.read<AssignedOrdersBloc>().add(FetchAssignedOrders());
+
+      _fetchMunicipios();
       _isDataFetched = true;
+    }
+  }
+
+  Future<void> _fetchMunicipios() async {
+    try {
+      final municipios = await _apiService.getMunicipios();
+      if (mounted) {
+        setState(() {
+          _municipiosOptions = ['Todos', ...municipios];
+          _isMunicipiosLoading = false;
+        });
+      }
+    } catch (e) {
+      log("Error al cargar municipios: $e");
+      if (mounted) {
+        setState(() {
+          _isMunicipiosLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -218,76 +250,112 @@ class _PedidosViewState extends State<PedidosView>
   }
 
   Widget _buildGroupedOrdersList(BuildContext context, List<Pedido> orders) {
-  
+    List<Pedido> filteredByMunicipio;
+    if (_selectedMunicipio == 'Todos') {
+      filteredByMunicipio = orders;
+    } else {
+      filteredByMunicipio = orders
+          .where((p) => p.municipio.trim() == _selectedMunicipio.trim())
+          .toList();
+    }
 
-    final UrgentOrder = orders.where((p) => p.isUrgente).toList();
-    log('VIEW DIAGNÓSTICO: Pedidos totales urgentes: ${UrgentOrder.length}');
+    final UrgentOrder = filteredByMunicipio.where((p) => p.isUrgente).toList();
+    log('VIEW DIAGNÓSTICO: Pedidos urgentes filtrados: ${UrgentOrder.length}');
 
-    final DeliverOrder = orders
+    final DeliverOrder = filteredByMunicipio
         .where(
             (p) => !p.isUrgente && p.estadoPedido.toLowerCase() == 'enviando')
         .toList();
+    log('VIEW DIAGNÓSTICO: Pedidos enviando filtrados: ${DeliverOrder.length}');
 
-    log('VIEW DIAGNÓSTICO: Pedidos totales enviando: ${DeliverOrder.length}');
-
-    final pickupOrders = orders
+    final pickupOrders = filteredByMunicipio
         .where(
             (p) => !p.isUrgente && p.estadoPedido.toLowerCase() == 'recogiendo')
         .toList();
-    log('VIEW DIAGNÓSTICO: Pedidos totales recogiendo: ${pickupOrders.length}');
+    log('VIEW DIAGNÓSTICO: Pedidos recogiendo filtrados: ${pickupOrders.length}');
+    List<Widget> widgetsToShow = [];
 
+    if ((_selectedOrderStatus == 'Todos' ||
+            _selectedOrderStatus == 'Urgentes') &&
+        UrgentOrder.isNotEmpty) {
+      widgetsToShow.add(_buildSectionTitle(
+        icon: Icons.warning_amber_rounded,
+        title: 'Pedidos Urgentes (${UrgentOrder.length})',
+        color: Colors.red,
+      ));
+      widgetsToShow.add(const SizedBox(height: 16));
+      widgetsToShow.addAll(UrgentOrder.map((pedido) => DynamicOrderCard(
+            key: ValueKey(pedido.id),
+            pedido: pedido,
+            cardColor: Colors.red.shade300,
+          )));
+      widgetsToShow.add(const SizedBox(height: 24)); 
+    }
+
+
+    if ((_selectedOrderStatus == 'Todos' ||
+            _selectedOrderStatus == 'Enviando') &&
+        DeliverOrder.isNotEmpty) {
+      widgetsToShow.add(_buildSectionTitle(
+        icon: Icons.local_shipping_outlined,
+        title: 'Pedidos a Entregar (${DeliverOrder.length})',
+        color: Colors.orange,
+      ));
+      widgetsToShow.add(const SizedBox(height: 16));
+      widgetsToShow.addAll(DeliverOrder.map((pedido) => DynamicOrderCard(
+            key: ValueKey(pedido.id),
+            pedido: pedido,
+            cardColor: Colors.orange.shade300,
+          )));
+      widgetsToShow.add(const SizedBox(height: 24)); 
+    }
+
+    // Construir sección "RECOGIENDO"
+    if ((_selectedOrderStatus == 'Todos' ||
+            _selectedOrderStatus == 'Recogiendo') &&
+        pickupOrders.isNotEmpty) {
+      widgetsToShow.add(_buildSectionTitle(
+        icon: Icons.schedule,
+        title: 'Pedidos a Recoger (${pickupOrders.length})',
+        color: Colors.green,
+      ));
+      widgetsToShow.add(const SizedBox(height: 16));
+      widgetsToShow.addAll(pickupOrders.map((pedido) => DynamicOrderCard(
+            key: ValueKey(pedido.id),
+            pedido: pedido,
+            cardColor: Colors.green.shade300,
+          )));
+  
+    }
+
+  
+    if (widgetsToShow.isEmpty) {
+ 
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Text(
+           
+            'Lo siento, no se encontró ningún pedido con ese estado o municipio.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+   
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (UrgentOrder.isNotEmpty) ...[
-          _buildSectionTitle(
-            icon: Icons.warning_amber_rounded,
-            title: 'Pedidos Urgentes (${UrgentOrder.length})',
-            color: Colors.red,
-          ),
-          const SizedBox(height: 16),
-          ...UrgentOrder.map((pedido) => DynamicOrderCard(
-                key: ValueKey(pedido.id),
-                pedido: pedido,
-                cardColor: Colors.red.shade300,
-              )),
-          const SizedBox(height: 24),
-        ],
-        if (DeliverOrder.isNotEmpty) ...[
-          _buildSectionTitle(
-            icon: Icons.local_shipping_outlined,
-            title: 'Pedidos a Entregar (${DeliverOrder.length})',
-            color: Colors.orange,
-          ),
-          const SizedBox(height: 16),
-          ...DeliverOrder.map((pedido) => DynamicOrderCard(
-                key: ValueKey(pedido.id),
-                pedido: pedido,
-                cardColor: Colors.orange.shade300,
-              )),
-          const SizedBox(height: 24),
-        ],
-        if (pickupOrders.isNotEmpty) ...[
-          _buildSectionTitle(
-            icon: Icons.schedule,
-            title: 'Pedidos a Recoger (${pickupOrders.length})',
-            color: Colors.green,
-          ),
-          const SizedBox(height: 16),
-          ...pickupOrders.map((pedido) => DynamicOrderCard(
-                key: ValueKey(pedido.id),
-                pedido: pedido,
-                cardColor: Colors.green.shade300,
-              )),
-        ],
-      ],
+      children: widgetsToShow, 
     );
   }
 
-//Verificar ahorita es de filtrado
+
   Widget _buildFilters() {
     return Row(
       children: [
+  
         Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -298,41 +366,60 @@ class _PedidosViewState extends State<PedidosView>
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: 'Todos los estados',
+                value: _selectedOrderStatus, 
                 isExpanded: true,
-                items: ['Todos los estados']
+                items: _orderStatusOptions 
                     .map((String value) => DropdownMenuItem<String>(
                           value: value,
                           child: Text(value,
                               style: TextStyle(color: Colors.grey.shade700)),
                         ))
                     .toList(),
-                onChanged: (_) {},
+                onChanged: (String? newValue) {
+                
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedOrderStatus = newValue;
+                    });
+                  }
+                },
               ),
             ),
           ),
         ),
         const SizedBox(width: 16),
+                                                         
         Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: _isMunicipiosLoading ? Colors.grey.shade200 : Colors.white,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade300),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: 'Todos los municipios',
+                value: _selectedMunicipio, // USA LA VARIABLE DE ESTADO
                 isExpanded: true,
-                items: ['Todos los municipios']
+                hint: _isMunicipiosLoading ? const Text("Cargando...") : null,
+                items: _municipiosOptions // USA LA LISTA DINÁMICA
                     .map((String value) => DropdownMenuItem<String>(
                           value: value,
                           child: Text(value,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: Colors.grey.shade700)),
                         ))
                     .toList(),
-                onChanged: (_) {},
+                onChanged: _isMunicipiosLoading
+                    ? null 
+                    : (String? newValue) {
+                 
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedMunicipio = newValue;
+                          });
+                        }
+                      },
               ),
             ),
           ),
@@ -359,7 +446,6 @@ class _PedidosViewState extends State<PedidosView>
 class DynamicOrderCard extends StatefulWidget {
   final Pedido pedido;
   final Color cardColor;
-  
 
   const DynamicOrderCard(
       {super.key, required this.pedido, required this.cardColor});
@@ -381,62 +467,60 @@ class _DynamicOrderCardState extends State<DynamicOrderCard> {
     _newState = widget.pedido.estadoPedido;
   }
 
-@override
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-  
+
     context.watch<AssignedOrdersBloc>().stream.listen((state) {
-      
-      if (_isUpdating && (state is AssignedOrdersActionSuccess || state is AssignedOrdersActionFailure)) {
-         if (mounted) {
-           setState(() {
-             _isUpdating = false;
-           });
-         }
+      if (_isUpdating &&
+          (state is AssignedOrdersActionSuccess ||
+              state is AssignedOrdersActionFailure)) {
+        if (mounted) {
+          setState(() {
+            _isUpdating = false;
+          });
+        }
       }
-      
-      if (_isCancelling && state is AssignedOrdersActionFailure && state.message.contains('Error al cancelar')) {
-         if (mounted) {
-            setState(() {
-              _isCancelling = false;
-            });
-         }
+
+      if (_isCancelling &&
+          state is AssignedOrdersActionFailure &&
+          state.message.contains('Error al cancelar')) {
+        if (mounted) {
+          setState(() {
+            _isCancelling = false;
+          });
+        }
       }
     });
   }
 
-
-
   @override
- void didUpdateWidget(covariant DynamicOrderCard oldWidget) {
-     super.didUpdateWidget(oldWidget);
-     if (oldWidget.pedido.estadoPedido != widget.pedido.estadoPedido) {
-       _newState = widget.pedido.estadoPedido;
-       _isUpdating = false; 
-       _isCancelling = false; 
-     } else if (oldWidget.pedido.id != widget.pedido.id) {
-       _newState = widget.pedido.estadoPedido;
-       _isUpdating = false;
-       _isCancelling = false;
-     }
+  void didUpdateWidget(covariant DynamicOrderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pedido.estadoPedido != widget.pedido.estadoPedido) {
+      _newState = widget.pedido.estadoPedido;
+      _isUpdating = false;
+      _isCancelling = false;
+    } else if (oldWidget.pedido.id != widget.pedido.id) {
+      _newState = widget.pedido.estadoPedido;
+      _isUpdating = false;
+      _isCancelling = false;
+    }
   }
-  
- void _showDetailsModal(BuildContext context, Pedido order) {
-  showDialog(
-    context: context,
-    builder: (BuildContext dialogContext) {
-    
-      return OrderDetailsModal(order: order);
-    },
-  );
-}
 
+  void _showDetailsModal(BuildContext context, Pedido order) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return OrderDetailsModal(order: order);
+      },
+    );
+  }
 
   Map<String, dynamic> _getStatusBadgeStyle(String status) {
     final normalizedStatus = status.toLowerCase();
 
     if (normalizedStatus.contains('enviando')) {
-      // Usa contains para ser más flexible
       return {
         'icon': Icons.local_shipping_outlined,
         'color': Colors.blue.shade700,
@@ -494,8 +578,7 @@ class _DynamicOrderCardState extends State<DynamicOrderCard> {
         border: Border.all(color: style['color'].withOpacity(0.5)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize
-            .min, 
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             style['icon'],
@@ -536,12 +619,10 @@ class _DynamicOrderCardState extends State<DynamicOrderCard> {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-       
         final bloc = BlocProvider.of<AssignedOrdersBloc>(context);
 
         return PaymentModal(
           order: order,
-      
           onPaymentRegistered: () {
             bloc.add(PaymentRegistered());
           },
@@ -550,83 +631,80 @@ class _DynamicOrderCardState extends State<DynamicOrderCard> {
     );
   }
 
-
 // Funcion de cancelar
-void _confirmCancellation(BuildContext context, Pedido pedido) {
-  final bloc = BlocProvider.of<AssignedOrdersBloc>(context);
+  void _confirmCancellation(BuildContext context, Pedido pedido) {
+    final bloc = BlocProvider.of<AssignedOrdersBloc>(context);
 
-  showDialog(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        title: const Text('Confirmar Cancelación'),
-        content: const Text('¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.'),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('No, Mantener', style: TextStyle(color: Colors.grey)),
-            onPressed: () {
-              Navigator.of(dialogContext).pop(); 
-            },
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Sí, Cancelar', style: TextStyle(color: Colors.white)),
-            onPressed: () {
-              Navigator.of(dialogContext).pop(); 
-              if (mounted) { 
-                    setState(() => _isCancelling = true); 
-                 }
-             
-              bloc.add(CancelOrder(pedido.id)); 
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirmar Cancelación'),
+          content: const Text(
+              '¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('No, Mantener',
+                  style: TextStyle(color: Colors.grey)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Sí, Cancelar',
+                  style: TextStyle(color: Colors.white)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                if (mounted) {
+                  setState(() => _isCancelling = true);
+                }
+
+                bloc.add(CancelOrder(pedido.id));
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
 //Modal reportar incidencias
-void _showIncidentModal(BuildContext context, Pedido pedido, String nuevoEstadoIncidente ){
- print("DEBUG: Intentando abrir _showIncidentModal para pedido ${pedido.id} con estado $nuevoEstadoIncidente con pedido ${pedido}");
- final bloc= context.read<AssignedOrdersBloc>();
-  bool seEnvioReporte = false;
+  void _showIncidentModal(
+      BuildContext context, Pedido pedido, String nuevoEstadoIncidente) {
+    print(
+        "DEBUG: Intentando abrir _showIncidentModal para pedido ${pedido.id} con estado $nuevoEstadoIncidente con pedido ${pedido}");
+    final bloc = context.read<AssignedOrdersBloc>();
+    bool seEnvioReporte = false;
 
-showDialog(
+    showDialog(
       context: context,
-    builder: (BuildContext dialogContext) {
-   
-      return IncidentModal(
-        order: pedido,
-        incidentStatus: nuevoEstadoIncidente,
-        onSubmit: (IncidentData data) {
-         
-           if (mounted) {
-             setState(() => _isUpdating = true);
-           }
-          
-           seEnvioReporte = true; 
+      builder: (BuildContext dialogContext) {
+        return IncidentModal(
+          order: pedido,
+          incidentStatus: nuevoEstadoIncidente,
+          onSubmit: (IncidentData data) {
+            if (mounted) {
+              setState(() => _isUpdating = true);
+            }
 
-         
-           bloc.add(SubmitOrderIncident(
-             orderId: pedido.id,
-             incidentData: data,
-           ));
+            seEnvioReporte = true;
 
-           Navigator.of(dialogContext).pop(); 
-        },
-      );
-    
-    },
-  ).then((_) {
-    
-    if (mounted && _isUpdating && !seEnvioReporte) {
-      setState(() => _isUpdating = false);
-    }
-   
-  });
-}
+            bloc.add(SubmitOrderIncident(
+              orderId: pedido.id,
+              incidentData: data,
+            ));
 
+            Navigator.of(dialogContext).pop();
+          },
+        );
+      },
+    ).then((_) {
+      if (mounted && _isUpdating && !seEnvioReporte) {
+        setState(() => _isUpdating = false);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -638,8 +716,7 @@ showDialog(
     final DateFormat formatter = DateFormat('dd MMM yyyy');
     final String fechaFormateada = formatter.format(pedido.fechaEntrega);
 
-    final bool isIncidentStateSelected = 
-        incidentStates.contains(_newState);
+    final bool isIncidentStateSelected = incidentStates.contains(_newState);
     final bool isUpdatePending = _newState != pedido.estadoPedido;
     final bool isButtonEnabled = isIncidentStateSelected || isUpdatePending;
 
@@ -696,8 +773,7 @@ showDialog(
                 ),
               ],
             ),
-            Text('#${pedido.id}',
-                style: const TextStyle(color: Colors.grey)), 
+            Text('#${pedido.id}', style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 12),
 
             // --- Información de Contacto y Dirección ---
@@ -707,11 +783,9 @@ showDialog(
             ),
 
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.calendar_today_outlined,
-                fechaFormateada), 
+            _buildInfoRow(Icons.calendar_today_outlined, fechaFormateada),
             const SizedBox(height: 8),
-            _buildInfoRow(
-                Icons.phone_outlined, pedido.telefonoCliente), 
+            _buildInfoRow(Icons.phone_outlined, pedido.telefonoCliente),
             const Divider(height: 24, thickness: 1, color: Colors.grey),
 
             _buildPaymentStatus(
@@ -750,11 +824,9 @@ showDialog(
 
             const SizedBox(height: 8),
 
-       
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-            
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -764,40 +836,32 @@ showDialog(
                       backgroundColor: Colors.orange,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
-                    
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4, vertical: 8),
                     ),
                     child: const Text('Detalles',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12)),
+                        style: TextStyle(color: Colors.white, fontSize: 12)),
                   ),
                 ),
-
-                const SizedBox(width: 8), 
-
-            
+                const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: (isButtonEnabled && !_isUpdating)
-                    ? () {
-                      if (mounted) {
-                               setState(() => _isUpdating = true);
+                        ? () {
+                            if (mounted) {
+                              setState(() => _isUpdating = true);
                             }
 
-                      if (incidentStates.contains(_newState)) {
-                             
+                            if (incidentStates.contains(_newState)) {
                               _showIncidentModal(context, pedido, _newState);
                             } else {
-                             
                               bloc.add(UpdateOrderStatus(
                                 orderId: pedido.id,
-                                newStatus: _newState, 
+                                newStatus: _newState,
                               ));
                             }
-
-                    } : null,
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isIncidentStateSelected
                           ? Colors.purple
@@ -807,39 +871,44 @@ showDialog(
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 8), 
+                          horizontal: 4, vertical: 8),
                     ),
                     child: _isUpdating
                         ? const SizedBox(
                             height: 14,
                             width: 14,
                             child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
+                                color: Colors.white, strokeWidth: 2))
                         : Text(
                             isIncidentStateSelected ? 'Reportar' : 'Actualizar',
                             style: const TextStyle(
                                 color: Colors.white, fontSize: 12)),
                   ),
                 ),
-
-                const SizedBox(width: 8), 
-
-              
+                const SizedBox(width: 8),
                 Expanded(
-                 child: ElevatedButton(
-                    onPressed: _isCancelling ? null : () { 
-                      _confirmCancellation(context, pedido);
-                    },
+                  child: ElevatedButton(
+                    onPressed: _isCancelling
+                        ? null
+                        : () {
+                            _confirmCancellation(context, pedido);
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 8), 
+                          horizontal: 4, vertical: 8),
                     ),
                     child: _isCancelling
-                           ? const SizedBox(height: 14, width: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                           : const Text('Cancelar', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        ? const SizedBox(
+                            height: 14,
+                            width: 14,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : const Text('Cancelar',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 12)),
                   ),
                 ),
               ],
@@ -929,8 +998,242 @@ Widget _buildPaymentStatus(
   }
 }
 
-class MapaView extends StatelessWidget {
+
+
+class MapaView extends StatefulWidget {
   const MapaView({super.key});
+
+  @override
+  State<MapaView> createState() => _MapaViewState();
+}
+
+class _MapaViewState extends State<MapaView> {
+  GoogleMapController? _mapController;
+  LocationPermission? _permissionStatus;
+  LatLng? _currentLocation;
+  final TextEditingController _searchController = TextEditingController();
+
+  
+  final Set<Marker> _markers = {};
+  final Set<Polyline> _polylines = {};
+  bool _isSearching = false;
+
+final String _googleAPIKey = "AIzaSyD7lyidrTc18I_ZUOeX0B61a71o1gk3bqQ";
+
+ 
+  static const CameraPosition _kInitialPosition = CameraPosition(
+    target: LatLng(21.1434, -98.3963), 
+    zoom: 14.0,
+  );
+
+
+  Future<void> _checkPermissionAndLocate() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Por favor, activa el servicio de ubicación (GPS).')));
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    
+    setState(() {
+      _permissionStatus = permission;
+    });
+
+    if (permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always) {
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high);
+        
+        setState(() {
+          _currentLocation = LatLng(position.latitude, position.longitude);
+        
+          _markers.clear();
+          _markers.add(
+            Marker(
+              markerId: const MarkerId('currentLocation'),
+              position: _currentLocation!,
+              infoWindow: const InfoWindow(title: 'Mi Ubicación'),
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+            ),
+          );
+        });
+
+        // Mueve la cámara
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(_currentLocation!, 16),
+        );
+      } catch (e) {
+        log("Error al obtener ubicación: $e");
+      }
+    } else if (permission == LocationPermission.deniedForever) {
+      _showPermissionDeniedDialog();
+    }
+  }
+
+
+  Future<void> _searchAddress() async {
+    final String address = _searchController.text;
+    if (address.isEmpty) return;
+
+    setState(() {
+      _isSearching = true; 
+      _polylines.clear(); 
+    });
+
+    try {
+     
+      List<Location> locations = await locationFromAddress(address);
+
+      if (locations.isNotEmpty) {
+        final targetLocation =
+            LatLng(locations.first.latitude, locations.first.longitude);
+        
+      
+        final targetMarker = Marker(
+          markerId: const MarkerId('targetLocation'),
+          position: targetLocation,
+          infoWindow: InfoWindow(title: address),
+        );
+
+        setState(() {
+         
+          _markers.add(targetMarker);
+        });
+
+      
+        _mapController
+            ?.animateCamera(CameraUpdate.newLatLngZoom(targetLocation, 16));
+
+      
+        if (_currentLocation != null) {
+          await _getDirections(_currentLocation!, targetLocation);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dirección no encontrada.')));
+      }
+    } catch (e) {
+      log("Error en Geocoding: $e");
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error al buscar: $e')));
+    }
+
+    setState(() {
+      _isSearching = false; 
+    });
+  }
+
+ 
+  Future<void> _getDirections(LatLng start, LatLng end) async {
+   
+    PolylinePoints polylinePoints = PolylinePoints();
+
+   
+    final PolylineRequest request = PolylineRequest(
+      origin: PointLatLng(start.latitude, start.longitude),
+      destination: PointLatLng(end.latitude, end.longitude),
+      mode: TravelMode.driving,
+    );
+
+  
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+      googleApiKey: _googleAPIKey, 
+      request: request,
+    );
+
+    if (result.points.isNotEmpty) {
+      List<LatLng> polylineCoordinates = [];
+      for (var point in result.points) {
+        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+      }
+
+      Polyline polyline = Polyline(
+        polylineId: const PolylineId('route'),
+        color: Colors.blue,
+        points: polylineCoordinates,
+        width: 5,
+      );
+
+      setState(() {
+        _polylines.add(polyline);
+      });
+    } else {
+      log("Error al trazar la ruta: ${result.errorMessage}");
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo trazar la ruta: ${result.errorMessage}')));
+    }
+  }
+
+
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Permiso Denegado'),
+        content: const Text(
+            'Has denegado permanentemente los permisos de ubicación. Ve a la configuración de tu app para activarlos.'),
+        actions: [
+          TextButton(
+            child: const Text('Cancelar'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: const Text('Abrir Configuración'),
+            onPressed: () {
+              Geolocator.openAppSettings();
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildMyLocationButton() {
+    String text = 'Mi Ubicación Actual';
+    IconData icon = Icons.my_location;
+    Color color = Colors.orange;
+
+    if (_permissionStatus == LocationPermission.denied) {
+      text = 'Permitir Ubicación';
+      icon = Icons.location_off;
+      color = Colors.grey;
+    } else if (_permissionStatus == LocationPermission.deniedForever) {
+      text = 'Ubicación Denegada';
+      icon = Icons.block;
+      color = Colors.red;
+    }
+
+    return ElevatedButton.icon(
+      onPressed: () {
+        if (_permissionStatus == LocationPermission.deniedForever) {
+          _showPermissionDeniedDialog();
+        } else {
+          _checkPermissionAndLocate();
+        }
+      },
+      icon: Icon(icon, color: color, size: 20),
+      label: Text(text, style: TextStyle(color: color, fontSize: 14)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: color,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: color),
+        ),
+        elevation: 2,
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -962,6 +1265,7 @@ class MapaView extends StatelessWidget {
                   children: [
                     Expanded(
                       child: TextField(
+                        controller: _searchController,
                         decoration: InputDecoration(
                           hintText: 'Escribir dirección del pedido...',
                           prefixIcon:
@@ -979,7 +1283,7 @@ class MapaView extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _isSearching ? null : _searchAddress,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
                         padding: const EdgeInsets.symmetric(
@@ -988,31 +1292,25 @@ class MapaView extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8)),
                         elevation: 2,
                       ),
-                      child: const Text('Buscar',
-                          style: TextStyle(color: Colors.white, fontSize: 16)),
+                      child: _isSearching
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Buscar',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 16)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.my_location,
-                        color: Colors.orange, size: 20),
-                    label: const Text('Mi Ubicación Actual',
-                        style: TextStyle(color: Colors.orange, fontSize: 14)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.orange,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: Colors.orange),
-                      ),
-                      elevation: 2,
-                    ),
-                  ),
+                  child: _buildMyLocationButton(),
                 ),
               ],
             ),
@@ -1022,11 +1320,6 @@ class MapaView extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade100, Colors.green.shade100],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
                 boxShadow: [
                   BoxShadow(
                       color: Colors.black26,
@@ -1034,77 +1327,20 @@ class MapaView extends StatelessWidget {
                       offset: const Offset(0, 4)),
                 ],
               ),
-              child: Stack(
-                children: [
-                  const GridLines(),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Column(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(8),
-                              topRight: Radius.circular(8),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 5)
-                            ],
-                          ),
-                          child: const Icon(Icons.add,
-                              color: Colors.black54, size: 20),
-                          padding: const EdgeInsets.all(8),
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(8),
-                              bottomRight: Radius.circular(8),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 5)
-                            ],
-                          ),
-                          child: const Icon(Icons.remove,
-                              color: Colors.black54, size: 20),
-                          padding: const EdgeInsets.all(8),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    top: 80,
-                    left: 40,
-                    child: Column(
-                      children: [
-                        const Icon(Icons.location_pin,
-                            color: Colors.blue, size: 40),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 5)
-                            ],
-                          ),
-                          child: const Text('Repartidor',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: GoogleMap(
+                  initialCameraPosition: _kInitialPosition,
+                  onMapCreated: (GoogleMapController controller) {
+                    _mapController = controller;
+                  },
+                  myLocationEnabled: _permissionStatus ==
+                          LocationPermission.whileInUse ||
+                      _permissionStatus == LocationPermission.always,
+                  myLocationButtonEnabled: false,
+                  markers: _markers,
+                  polylines: _polylines,
+                ),
               ),
             ),
           ),
@@ -1112,38 +1348,4 @@ class MapaView extends StatelessWidget {
       ),
     );
   }
-}
-
-class GridLines extends StatelessWidget {
-  const GridLines({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.infinite,
-      painter: GridPainter(),
-    );
-  }
-}
-
-class GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
-      ..strokeWidth = 0.5;
-
-    for (var i = 1; i < 5; i++) {
-      final dy = i * size.height / 5;
-      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), paint);
-    }
-
-    for (var i = 1; i < 4; i++) {
-      final dx = i * size.width / 4;
-      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

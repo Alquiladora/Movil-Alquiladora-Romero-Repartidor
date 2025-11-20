@@ -4,11 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/api_service_login.dart';
 import 'login_event.dart';
 import 'login_state.dart';
+import '../../../../core/services/notificacion_service.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final AuthService authService;
   
-
+final NotificationService _notificationService = NotificationService();
 
   LoginBloc({required this.authService}) : super(LoginInitial()) {
     on<LoginButtonPressed>(_onLoginButtonPressed);
@@ -31,6 +32,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (result['success']) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('authToken', result['token']);
+        await _notificationService.registerToken();
         emit(LoginSuccess());
       } else {
         emit(LoginFailure(error: result['message']));

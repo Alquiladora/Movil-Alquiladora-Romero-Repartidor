@@ -173,5 +173,33 @@ Future<void> reportarIncidente(int pedidoId, Map<String, dynamic> payload) async
     }
   }
 
+
+
+  Future<List<String>> getMunicipios() async {
+    try {
+      final token = await _tokenService.getToken();
+      if (token == null) {
+        throw Exception('Usuario no autenticado.');
+      }
+      final response = await _dio.get(
+        '/pedidos/municipios', 
+        options: Options(headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        
+        List<String> municipios = List<String>.from(response.data);
+        return municipios;
+      } else {
+        throw Exception('Respuesta inesperada del servidor al Cargar Municipios.');
+      }
+    } on DioException catch (e) {
+      log('Error en getMunicipios: ${e.response?.data ?? e.message}');
+      throw Exception('Error de red: No se pudo obtener la lista de municipios.');
+    }
+  }
  
 }

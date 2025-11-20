@@ -37,18 +37,18 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    print("Iniciando petición de login para: $email, $password"); 
+
 
     try {
       final deviceAndIpInfo = await _getDeviceAndIpInfo();
-         print("url deviceAndIpInfo: $deviceAndIpInfo");
+       
       final deviceType = deviceAndIpInfo['deviceType']!;
-       print("url deviceType: $deviceType");
+  
       final ip = deviceAndIpInfo['ip']!;
-        print("url ip: $ip");
+     
       final url = Uri.parse('$baseUrl/usuarios/login-movil');
 
-      print("url de login: $url");
+     
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -61,7 +61,7 @@ class AuthService {
       );
 
       final responseData = json.decode(response.body);
-      print("Respuesta del servidor: $responseData");
+     
 
       if (response.statusCode == 200 && responseData.containsKey('token')) {
         await _tokenService.saveToken(responseData['token']);
