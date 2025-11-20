@@ -28,13 +28,17 @@ jobs:
           channel: stable
           cache: true
 
+      # CACHE MEJORADO (nunca más falla)
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
             ~/.pub-cache
-            ~/.gradle
-          key: ${{ runner.os }}-flutter-${{ hashFiles('pubspec.yaml') }}
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-
 
       - name: Install dependencies
         run: flutter pub get
@@ -59,9 +63,9 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           files: coverage/lcov.info
-          token: ${{secrets.CODECOV_TOKEN}}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Success message
         if: success()
         run: |
-          echo "✅ CI completada: pruebas exitosas, cobertura enviada y APK generado."
+          echo "✅ CI completada exitosamente: pruebas, APK y cobertura OK"
